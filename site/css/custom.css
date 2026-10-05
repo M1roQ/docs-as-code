@@ -1,0 +1,10 @@
+nav .wy-side-nav-search > a > img,
+nav .wy-side-nav-search .wy-dropdown > a > img {
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0.809em !important;
+    text-align: left !important;
+    max-width: 100% !important;
+}

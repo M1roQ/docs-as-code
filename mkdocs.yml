@@ -1,0 +1,35 @@
+site_name: My Docs
+
+repo_url: https://github.com/M1roQ/docs-as-code
+repo_name: M1roQ/docs-as-code
+
+theme:
+  name: material
+  logo: assets/logo.ico
+  favicon: assets/favicon.ico
+  icon:
+    repo: fontawesome/brands/github
+  edit_uri: edit/main/docs/
+  palette:
+    - scheme: default
+      primary: deep-purple
+      accent: lavender
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+
+    - scheme: slate
+      primary: deep-purple
+      accent: pink
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  features:
+    - search.highlight
+    - search.share
+
+extra_css:
+  - css/custom.css
+
+plugins:
+  - search
