@@ -1,0 +1,202 @@
+openapi: 3.0.3
+info:
+  title: Review Sentiment Analyzer API
+  description: API для отправки отзывов, получения результатов анализа тональности и просмотра доступных ML-моделей.
+  version: 1.0.0
+
+servers:
+  - url: https://example.com/api/v1
+
+paths:
+  /analysis:
+    post:
+      summary: Проанализировать тональность отзыва
+      description: Принимает текст отзыва и возвращает определённую ML-моделью тональность, а также уровень уверенности.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: Текст отзыва пользователя.
+                  example: Доставка была быстрой, но упаковка оказалась повреждённой.
+      responses:
+        '200':
+          description: Анализ тональности выполнен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResult'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: Код ошибки.
+                    example: INVALID_TEXT
+                  message:
+                    type: string
+                    description: Понятное описание причины ошибки.
+                    example: Поле text обязательно и не должно быть пустым.
+        '422':
+          description: Текст отзыва не может быть обработан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: Код ошибки.
+                    example: TEXT_NOT_SUPPORTED
+                  message:
+                    type: string
+                    description: Понятное описание причины ошибки.
+                    example: Текст отзыва слишком короткий или не содержит понятного содержания.
+        '503':
+          description: ML-модель временно недоступна
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: Код ошибки.
+                    example: MODEL_UNAVAILABLE
+                  message:
+                    type: string
+                    description: Понятное описание причины ошибки.
+                    example: Сервис анализа отзывов временно недоступен. Повторите запрос позже.
+  /analysis/{analysisId}:
+    get:
+      summary: Получить результат анализа по идентификатору
+      description: Возвращает ранее сохранённый результат анализа тональности отзыва.
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          description: Уникальный идентификатор результата анализа.
+          schema:
+            type: string
+          example: a1b2c3d4-e5f6-7890-abcd-1234567890ab
+      responses:
+        '200':
+          description: Результат анализа найден
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AnalysisResult'
+                  - type: object
+                    properties:
+                      reviewText:
+                        type: string
+                        description: Текст проанализированного отзыва.
+                        example: Доставка была быстрой, но упаковка оказалась повреждённой.
+        '404':
+          description: Результат анализа не найден
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: Код ошибки.
+                    example: ANALYSIS_NOT_FOUND
+                  message:
+                    type: string
+                    description: Понятное описание причины ошибки.
+                    example: Результат анализа с указанным идентификатором не найден.
+  /models:
+    get:
+      summary: Получить список доступных ML-моделей
+      description: Возвращает список ML-моделей, которые могут использоваться для анализа тональности отзывов.
+      responses:
+        '200':
+          description: Список моделей получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    description: Доступные ML-модели.
+                    items:
+                      type: object
+                      properties:
+                        modelId:
+                          type: string
+                          description: Уникальный идентификатор модели.
+                          example: sentiment-bert-v1.2
+                        name:
+                          type: string
+                          description: Название модели.
+                          example: Sentiment BERT
+                        version:
+                          type: string
+                          description: Версия модели.
+                          example: "1.2"
+                        isActive:
+                          type: boolean
+                          description: Показывает, используется ли модель по умолчанию.
+                          example: true
+        '503':
+          description: Сервис временно недоступен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: Код ошибки.
+                    example: SERVICE_UNAVAILABLE
+                  message:
+                    type: string
+                    description: Понятное описание причины ошибки.
+                    example: Не удалось получить список моделей. Повторите запрос позже.
+
+components:
+  schemas:
+    AnalysisResult:
+      type: object
+      description: Результат анализа тональности отзыва.
+      properties:
+        analysisId:
+          type: string
+          description: Уникальный идентификатор результата анализа.
+          example: a1b2c3d4-e5f6-7890-abcd-1234567890ab
+        sentiment:
+          type: string
+          description: Определённая тональность отзыва.
+          enum:
+            - positive
+            - neutral
+            - negative
+          example: neutral
+        confidence:
+          type: number
+          format: float
+          description: Уверенность модели в результате от 0 до 1.
+          example: 0.87
+        modelVersion:
+          type: string
+          description: Версия ML-модели, которая выполнила анализ.
+          example: sentiment-bert-v1.2
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата и время создания результата анализа.
+          example: "2026-10-21T19:40:00Z"
