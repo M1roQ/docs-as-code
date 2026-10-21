@@ -31,5 +31,22 @@ theme:
 extra_css:
   - css/custom.css
 
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
+
 plugins:
   - search
+  - mermaid2
+
+nav:
+  - Главная: index.md
+  - Проект:
+      - Описание: project/overview.md
+      - Требования: project/requirements.md
+      - Диаграммы: project/diagrams.md
