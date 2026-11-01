@@ -4,14 +4,16 @@ info:
   description: API для отправки отзывов, получения результатов анализа тональности и просмотра доступных ML-моделей.
   version: 1.0.0
 
+
 servers:
   - url: https://example.com/api/v1
+
 
 paths:
   /analysis:
     post:
       summary: Проанализировать тональность отзыва
-      description: Принимает текст отзыва и возвращает определённую ML-моделью тональность, а также уровень уверенности.
+      description: Принимает текст отзыва и возвращает результат анализа тональности, уровень уверенности модели, идентификатор результата и сведения о модели. Исходный текст отзыва не возвращается.
       requestBody:
         required: true
         content:
@@ -24,6 +26,8 @@ paths:
                 text:
                   type: string
                   description: Текст отзыва пользователя.
+                  minLength: 1
+                  maxLength: 512
                   example: Доставка была быстрой, но упаковка оказалась повреждённой.
       responses:
         '200':
@@ -37,50 +41,23 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: string
-                    description: Код ошибки.
-                    example: INVALID_TEXT
-                  message:
-                    type: string
-                    description: Понятное описание причины ошибки.
-                    example: Поле text обязательно и не должно быть пустым.
+                $ref: '#/components/schemas/Error'
         '422':
           description: Текст отзыва не может быть обработан
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: string
-                    description: Код ошибки.
-                    example: TEXT_NOT_SUPPORTED
-                  message:
-                    type: string
-                    description: Понятное описание причины ошибки.
-                    example: Текст отзыва слишком короткий или не содержит понятного содержания.
+                $ref: '#/components/schemas/Error'
         '503':
           description: ML-модель временно недоступна
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: string
-                    description: Код ошибки.
-                    example: MODEL_UNAVAILABLE
-                  message:
-                    type: string
-                    description: Понятное описание причины ошибки.
-                    example: Сервис анализа отзывов временно недоступен. Повторите запрос позже.
+                $ref: '#/components/schemas/Error'
   /analysis/{analysisId}:
     get:
       summary: Получить результат анализа по идентификатору
-      description: Возвращает ранее сохранённый результат анализа тональности отзыва.
+      description: Возвращает ранее сохранённый результат анализа тональности отзыва и исходный текст отзыва.
       parameters:
         - name: analysisId
           in: path
@@ -88,7 +65,7 @@ paths:
           description: Уникальный идентификатор результата анализа.
           schema:
             type: string
-          example: a1b2c3d4-e5f6-7890-abcd-1234567890ab
+            example: a1b2c3d4-e5f6-7890-abcd-1234567890ab
       responses:
         '200':
           description: Результат анализа найден
@@ -108,20 +85,11 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: string
-                    description: Код ошибки.
-                    example: ANALYSIS_NOT_FOUND
-                  message:
-                    type: string
-                    description: Понятное описание причины ошибки.
-                    example: Результат анализа с указанным идентификатором не найден.
+                $ref: '#/components/schemas/Error'
   /models:
     get:
       summary: Получить список доступных ML-моделей
-      description: Возвращает список ML-моделей, которые могут использоваться для анализа тональности отзывов.
+      description: Возвращает объект с массивом доступных ML-моделей, которые могут использоваться для анализа тональности отзывов.
       responses:
         '200':
           description: Список моделей получен
@@ -129,12 +97,20 @@ paths:
             application/json:
               schema:
                 type: object
+                description: Объект-обёртка, содержащий массив доступных ML-моделей.
+                required:
+                  - models
                 properties:
                   models:
                     type: array
                     description: Доступные ML-модели.
                     items:
                       type: object
+                      required:
+                        - modelId
+                        - name
+                        - version
+                        - isActive
                       properties:
                         modelId:
                           type: string
@@ -157,22 +133,18 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: string
-                    description: Код ошибки.
-                    example: SERVICE_UNAVAILABLE
-                  message:
-                    type: string
-                    description: Понятное описание причины ошибки.
-                    example: Не удалось получить список моделей. Повторите запрос позже.
+                $ref: '#/components/schemas/Error'
+
 
 components:
   schemas:
     AnalysisResult:
       type: object
       description: Результат анализа тональности отзыва.
+      required:
+        - analysisId
+        - sentiment
+        - confidence
       properties:
         analysisId:
           type: string
@@ -190,6 +162,8 @@ components:
           type: number
           format: float
           description: Уверенность модели в результате от 0 до 1.
+          minimum: 0
+          maximum: 1
           example: 0.87
         modelVersion:
           type: string
@@ -200,3 +174,19 @@ components:
           format: date-time
           description: Дата и время создания результата анализа.
           example: "2026-10-21T19:40:00Z"
+
+    Error:
+      type: object
+      description: Стандартная структура ответа об ошибке.
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Код ошибки.
+          example: INVALID_TEXT
+        message:
+          type: string
+          description: Понятное описание причины ошибки.
+          example: Поле text обязательно и не должно быть пустым.
